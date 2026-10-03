@@ -59,24 +59,24 @@
 
 ### `search_listings`
 
-- **What it does:**
-- **Inputs:** <!-- name and type each: `max_price` (float), not "a price" -->
-- **Returns:**
-- **When it has nothing:**
+- **What it does:** Finds listings whose title, description, category, tags, colors, or brand overlap the requested keywords, optionally filtering by an exact size token and inclusive maximum price; results are ranked by keyword overlap.
+- **Inputs:** `description` (`str`); `size` (`str | None`, optional); `max_price` (`float | None`, optional).
+- **Returns:** Up to `SEARCH_RESULT_LIMIT` listing dictionaries, each with `id`, `title`, `description`, `category`, `style_tags`, `size`, `condition`, `price`, `colors`, `brand`, and `platform`, ordered best match first.
+- **When it has nothing:** Returns an empty list if no listing passes the filters and has at least one matching keyword.
 
 ### `suggest_outfit`
 
-- **What it does:**
-- **Inputs:**
-- **Returns:**
-- **When it has nothing:**
+- **What it does:** Uses the model to suggest one or two outfits for a selected listing, grounding suggestions in pieces the user owns when available.
+- **Inputs:** `new_item` (`dict`, a listing); `wardrobe` (`dict`, with an `items` list of wardrobe-item dictionaries).
+- **Returns:** A non-empty model-generated outfit suggestion (`str`); with an empty wardrobe, gives general styling ideas without claiming the user owns other pieces.
+- **When it has nothing:** Raises `RuntimeError` if the model returns empty text; a model outage raises `ModelUnavailable`.
 
 ### `create_fit_card`
 
-- **What it does:**
-- **Inputs:**
-- **Returns:**
-- **When it has nothing:**
+- **What it does:** Creates a short social-media caption based on an outfit suggestion and listing, naming the item, price, and platform.
+- **Inputs:** `outfit` (`str`); `new_item` (`dict`, a listing).
+- **Returns:** A model-generated caption of two to four sentences, mentioning the item, price, and platform once each.
+- **When it has nothing:** If `outfit` is empty or whitespace, returns a descriptive fallback string without calling the model; empty model text raises `RuntimeError`, and model outages raise `ModelUnavailable`.
 
 ---
 
@@ -93,13 +93,13 @@
      The grader checks your code against what you claim here, so the file and
      function have to be real. -->
 
-**Branch rule:**
+**Branch rule:** If `search_listings` returns an empty list, store an error message suggesting that the user change the description or remove a size or price limit, then stop before calling `suggest_outfit`. Otherwise, save the first ranked result as `selected_item`, pass it and the wardrobe to `suggest_outfit`, then pass the outfit suggestion and selected item to `create_fit_card`.
 
 **Where it lives:** `agent.py::run_agent`
 
-**How the query is parsed:** <!-- regex, string splitting, or asking the model — say which -->
+**How the query is parsed:** Regular expressions extract a description, an optional size, and an optional maximum price.
 
-**What moves through the session:** <!-- which fields, in what order -->
+**What moves through the session:** `query` → `parsed` (`description`, `size`, `max_price`) → `search_results` → first result in `selected_item` → `outfit_suggestion` → `fit_card`. If there are no search results or the model is unavailable, `error` is set and the loop stops.
 
 ---
 
