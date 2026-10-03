@@ -4,18 +4,17 @@ A trace: a printed record of what your agent did, step by step, in order.
 Right now, when your agent does something strange, your only evidence is the
 final output. A trace turns that into a sequence you can point at.
 
-You'll add trace calls to your loop in unit 4, Milestone 2. The formatting is
-done for you here so you're not fighting alignment — what's yours is deciding
-*where* the calls go, which is the part that makes the trace worth reading.
+The agent records tool calls here when tracing is enabled. `app.py --trace`
+and `run_eval.py` call `start_trace()` before a run; ordinary runs do not print
+trace output.
 
-Use it like this, inside `run_agent()`:
+To start and retrieve a trace:
 
-    from trace import step, start_trace, get_trace
+    import trace
 
-    start_trace()
-    ...
-    step("search_listings", inputs={"description": desc, "max_price": 30},
-         returned=results)
+    trace.start_trace()
+    session = run_agent(query, wardrobe)
+    print(trace.get_trace())
 
 At the end, `get_trace()` gives you the whole thing as text, ready to paste
 into your README under **Loop Trace**.
@@ -29,13 +28,15 @@ import config
 
 _lines: list[str] = []
 _step_number = 0
+_recording = False
 
 
 def start_trace() -> None:
     """Clear the trace. Call this at the start of each run."""
-    global _step_number
+    global _step_number, _recording
     _lines.clear()
     _step_number = 0
+    _recording = True
 
 
 def step(name: str, inputs=None, returned=None, note: str = "") -> None:
@@ -50,6 +51,9 @@ def step(name: str, inputs=None, returned=None, note: str = "") -> None:
         note:     an optional word on why, e.g. "branch: empty, stopping".
     """
     global _step_number
+    if not _recording:
+        return
+
     _step_number += 1
 
     line = f"[{_step_number}] {name}"

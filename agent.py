@@ -13,6 +13,8 @@ Build and test your three tools in `tools.py` first. Then come here.
     python agent.py          runs both example paths below
 """
 
+import re
+
 import config
 import trace
 from tools import search_listings, suggest_outfit, create_fit_card
@@ -49,6 +51,40 @@ def new_session(query: str, wardrobe: dict) -> dict:
 
 # ── planning loop ─────────────────────────────────────────────────────────────
 
+def _parse_query(query: str) -> dict:
+    """Extract a description and optional size and price ceiling from a query."""
+    parsed_query = query
+    max_price = None
+    price_match = re.search(
+        r"\b(?:under|below|less than|at most|up to|max(?:imum)?)\s*"
+        r"\$?\s*(\d+(?:\.\d{1,2})?)\b",
+        parsed_query,
+        re.IGNORECASE,
+    )
+    if price_match:
+        max_price = float(price_match.group(1))
+        parsed_query = parsed_query[:price_match.start()] + parsed_query[price_match.end():]
+
+    size = None
+    size_match = re.search(
+        r"\b(?:size|sz)\s+"
+        r"(extra\s+small|extra\s+large|one\s+size|medium|small|large|"
+        r"xxs|xxl|xs|xl|s|m|l|w\d+(?:\s*l\d+)?|us\s*\d+|\d{1,2})\b",
+        parsed_query,
+        re.IGNORECASE,
+    )
+    if size_match:
+        size = re.sub(r"\s+", " ", size_match.group(1)).strip()
+        parsed_query = parsed_query[:size_match.start()] + parsed_query[size_match.end():]
+
+    description = re.sub(r"\s+", " ", parsed_query).strip(" ,.!?;:-")
+    return {
+        "description": description,
+        "size": size,
+        "max_price": max_price,
+    }
+
+
 def run_agent(query: str, wardrobe: dict) -> dict:
     """
     Run the loop once and return the finished session.
@@ -63,53 +99,93 @@ def run_agent(query: str, wardrobe: dict) -> dict:
         The session dict. **Check session["error"] first** — if it isn't None,
         the run ended early and the later fields will still be None.
 
-    ─────────────────────────────────────────────────────────────────────────
-    TODO — build this, following the branch rule you wrote in Milestone 2.
-
-      1. Start a session with new_session().
-
-      2. Count the times round the loop, and call trace.check_iterations(count)
-         on each one before you go again. It raises when the count passes
-         MAX_ITERATIONS in config.py — see trace.py.
-
-      3. Parse the query into a description, a size, and a max_price. Regex,
-         string splitting, or asking the model are all fine — say which you
-         chose in your README. Put the result in session["parsed"].
-
-      4. Call search_listings() with what you parsed.
-         Put the results in session["search_results"].
-
-         ⚠️ THIS IS THE BRANCH. If nothing came back:
-              - put a message in session["error"] saying what the user could
-                change — "No results" is not that message
-              - return the session
-              - do NOT call suggest_outfit with nothing
-
-      5. Choose an item — the first result is fine. Put it in
-         session["selected_item"].
-
-      6. Call suggest_outfit() with the selected item and the wardrobe.
-         Put the result in session["outfit_suggestion"].
-
-      7. Call create_fit_card() with the outfit and the item.
-         Put the result in session["fit_card"].
-
-      8. Return the session.
-
-    ─────────────────────────────────────────────────────────────────────────
-    IN UNIT 4 you come back and add two things:
-
-      • Trace calls. One per step. `trace.step("search_listings", inputs=...,
-        returned=...)` — see trace.py. Your README needs the output.
-
-      • A handler for ModelUnavailable, so a bad key produces a message rather
-        than a stack trace. The import is already at the top of this file.
+    The query is parsed with regular expressions. The loop searches first,
+    stops if there are no matches, then suggests an outfit and writes a fit
+    card. Every tool result is stored in the session.
     """
     session = new_session(query, wardrobe)
+    session["parsed"] = _parse_query(query)
 
-    # TODO: delete these two lines and build the loop.
-    session["error"] = "The planning loop isn't built yet — see the TODO in agent.py."
-    return session
+    try:
+        for iteration in range(1, config.MAX_ITERATIONS + 1):
+            trace.check_iterations(iteration)
+
+            if iteration == 1:
+                parsed = session["parsed"]
+                results = search_listings(
+                    parsed["description"],
+                    size=parsed["size"],
+                    max_price=parsed["max_price"],
+                )
+                session["search_results"] = results
+                if not results:
+                    constraints = []
+                    if parsed["size"]:
+                        constraints.append(f"size {parsed['size']}")
+                    if parsed["max_price"] is not None:
+                        constraints.append(f"under ${parsed['max_price']:g}")
+                    constraint_text = (
+                        f" with {' and '.join(constraints)}" if constraints else ""
+                    )
+                    session["error"] = (
+                        f"No listings matched {parsed['description']!r}{constraint_text}. "
+                        "Try changing the item description or removing a size or price limit."
+                    )
+                    trace.step(
+                        "search_listings",
+                        inputs=parsed,
+                        returned=results,
+                        note="empty result; stopping before outfit suggestion",
+                    )
+                    return session
+
+                session["selected_item"] = results[0]
+                trace.step(
+                    "search_listings",
+                    inputs=parsed,
+                    returned=results,
+                    note="selected the first ranked result",
+                )
+
+            elif iteration == 2:
+                item = session["selected_item"]
+                session["outfit_suggestion"] = suggest_outfit(
+                    item,
+                    session["wardrobe"],
+                )
+                trace.step(
+                    "suggest_outfit",
+                    inputs={"item": item, "wardrobe": session["wardrobe"]},
+                    returned=session["outfit_suggestion"],
+                )
+
+            elif iteration == 3:
+                session["fit_card"] = create_fit_card(
+                    session["outfit_suggestion"],
+                    session["selected_item"],
+                )
+                trace.step(
+                    "create_fit_card",
+                    inputs={
+                        "outfit": session["outfit_suggestion"],
+                        "item": session["selected_item"],
+                    },
+                    returned=session["fit_card"],
+                )
+                return session
+
+    except ModelUnavailable as exc:
+        session["error"] = str(exc)
+        trace.step(
+            "ModelUnavailable",
+            returned=session["error"],
+            note="stopping with the model adapter's actionable error",
+        )
+        return session
+
+    raise RuntimeError(
+        f"The planning loop did not finish within {config.MAX_ITERATIONS} iterations."
+    )
 
 
 # ── running it directly ───────────────────────────────────────────────────────
