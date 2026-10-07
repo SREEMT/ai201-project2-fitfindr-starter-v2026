@@ -39,9 +39,11 @@
 
 ## What This Does
 
-<!-- Three or four sentences: what a user asks for, and what they get back. -->
-
-
+FitFindr helps a user find a thrift listing by describing an item they want,
+with optional size and maximum-price limits. It ranks matching listings from
+the local dataset and selects the best match. It then suggests outfits using
+the user's wardrobe and creates a short fit-card caption for the find. If no
+listing matches, it explains what the user could change instead.
 
 ---
 
@@ -113,7 +115,29 @@
 **One full query**
 
 ```
-$ python app.py ask '...'
+$ python app.py ask 'vintage graphic tee under $30'
+
+  Found:    Y2K Baby Tee — Butterfly Print — $18.0 on depop
+
+  Outfit:   Here is a complete, wearable outfit using your Y2K baby tee:
+
+* **Bottoms:** Baggy straight-leg jeans (dark blue/indigo)
+* **Shoes:** Chunky white sneakers
+* **Outerwear:** Vintage black denim jacket
+* **Accessories:** Black crossbody bag
+
+**Why it works:** Pairing the fitted, cropped butterfly tee with the baggy
+dark-wash jeans creates a classic Y2K streetwear silhouette. Throwing on the
+vintage black denim jacket and chunky white sneakers ties the casual, retro
+look together, while the black crossbody bag keeps it practical for everyday
+wear.
+
+  Fit card: Channeling major early 2000s energy with this butterfly baby tee,
+  styled with baggy dark-wash denim and chunky white sneakers. Grab this Y2K
+  baby tee for $18.0 right here on depop before it’s gone. It's the ultimate
+  throwback look for everyday wear.
+
+0 model calls this session, 2 served from cache
 
 ```
 
@@ -168,15 +192,26 @@ Try 3: Throw on a crisp white tee and your favorite sneakers with these broken-i
 
 **Moment 1**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* Check whether my acceptance-criteria drafts were clear
+  and measurable, without writing them for me.
+- *What came back:* AI pointed out that my fifth criterion repeated the fit-card
+  criterion instead of testing the price limit, and that criterion 4's target
+  wording was unclear.
+- *What I changed:* I corrected criterion 4 to say “at least 4 of 5 tries” and
+  made criterion 5 a separate test: every result for `graphic tee under $30`
+  must cost $30 or less.
 
 **Moment 2**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* Implement the missing tools and planning loop because the
+  starter returned “The planning loop isn't built yet.” This also included helping me catch up with the code from class.
+- *What came back:* Code for keyword/size/price search, model-backed outfit and
+  fit-card tools, and a session-based loop that stops when search returns no
+  listings.
+- *What I changed:* I tested the tools separately and checked both loop paths.
+  I confirmed that the no-match path stops before the model calls and that the
+  selected item reaches the later tools, then recorded the observed commands
+  and outputs in the Sample Run section.
 
 <!-- ═══════════════════════ UNIT 4 — THE TEST ═══════════════════════
 
