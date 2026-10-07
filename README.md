@@ -120,17 +120,38 @@ $ python app.py ask '...'
 **The three tools, tested one at a time**
 
 ```
-$ python -c "from tools import search_listings; print(search_listings('graphic tee', max_price=30))"
+$ python -c "from tools import search_listings; results = search_listings('graphic tee', max_price=30); print([(item['id'], item['title'], item['price'], item['size']) for item in results])"
+[('lst_002', 'Y2K Baby Tee — Butterfly Print', 18.0, 'S/M'), ('lst_006', 'Graphic Tee — 2003 Tour Bootleg Style', 24.0, 'L'), ('lst_017', 'Mesh Long-Sleeve Top — Black', 15.0, 'S/M'), ('lst_033', 'Vintage Band Tee — Faded Grey', 19.0, 'L'), ('lst_011', 'Low-Rise Cargo Pants — Khaki', 27.0, 'W29'), ('lst_015', 'Vintage Graphic Hoodie — Faded Black', 26.0, 'L')]
 
 ```
 
 ```
-$ python -c "from tools import suggest_outfit; ..."
+$ python -c "from tools import suggest_outfit; from utils.data_loader import get_example_wardrobe, load_listings; print(suggest_outfit(load_listings()[0], get_example_wardrobe()))"
+**Outfit 1: Casual Streetwear**
+* Vintage Levi's 501 Jeans (Medium Wash)
+* Black cropped zip hoodie
+* Chunky white sneakers
+* Black crossbody bag
+
+**Outfit 2: Classic Minimal**
+* Vintage Levi's 501 Jeans (Medium Wash)
+* White ribbed tank top
+* Brown leather belt
+* Black combat boots
+* Vintage black denim jacket
 
 ```
 
+Run this command three times with caching disabled (one temporary model 503 was
+retried before these three successful responses):
+
 ```
-$ python -c "from tools import create_fit_card; ..."
+$ python -c "import config; config.CACHE_ENABLED = False; from tools import create_fit_card; from utils.data_loader import load_listings; print(create_fit_card('Baggy jeans, white tee, sneakers', load_listings()[0]))"
+Try 1: Channel off-duty model energy with these vintage Levi's 501 jeans styled with a crisp white tee and your favorite sneakers. These classic denim staples feature a worn-in medium wash and are available on Depop for just $38. Grab them for your capsule wardrobe before someone else does!
+
+Try 2: Nothing beats a classic white tee and these worn-in vintage Levi's 501 jeans for an effortless off-duty look. Styled with fresh sneakers, the light knee fading gives them that perfectly lived-in feel right out of the box. Grab this medium wash staple for just $38.0 on depop before someone else does.
+
+Try 3: Throw on a crisp white tee and your favorite sneakers with these broken-in vintage Levi's 501 jeans for the ultimate effortless weekend uniform. The dreamy medium wash and authentic knee fading give them that hard-to-find lived-in look right out of the box. Grab this timeless pair on Depop right now for just $38.
 
 ```
 
