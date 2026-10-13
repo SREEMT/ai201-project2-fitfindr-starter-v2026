@@ -91,7 +91,10 @@ def _short(value, limit: int = 110) -> str:
 
     if isinstance(value, dict):
         if "title" in value:
-            return f"{value.get('title')} (${value.get('price')}, {value.get('platform')})"
+            return (
+                f"{value.get('id', '?')}: {value.get('title')} "
+                f"(${value.get('price')}, {value.get('platform')})"
+            )
         entries = []
         for key, item in list(value.items())[:4]:
             if isinstance(item, (dict, list)):

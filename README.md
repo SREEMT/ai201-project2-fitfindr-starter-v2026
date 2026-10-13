@@ -233,17 +233,68 @@ Try 3: Throw on a crisp white tee and your favorite sneakers with these broken-i
 
 | Criterion | Target | Try 1 | Try 2 | Try 3 | Try 4 | Try 5 | Verdict |
 |---|---|---|---|---|---|---|---|
-| 1.  |  |  |  |  |  |  |  |
-| 2.  |  |  |  |  |  |  |  |
-| 3.  |  |  |  |  |  |  |  |
-| 4.  |  |  |  |  |  |  |  |
-| 5.  |  |  |  |  |  |  |  |
+| 1. Full three-tool run returns a fit card | 4 of 5 | FAIL | PASS | PASS | PASS | PASS | MET (4/5) |
+| 2. Empty search stops before tool 2 | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 3. Item in session matches item passed on | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 4. Fit card mentions the item's price and platform | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 5. Over-budget query returns nothing over the limit | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
 
 **Real output from one try**, pasted as text, naming the file and function
 that produced it:
 
+Evidence from `run_eval.py::main` (`results/run_2026-10-12_1844_before.md`).
+
+**Criterion 1 — `agent.py::run_agent`, Try 2:** The run completed all three
+tools and produced a fit card. Try 1 failed when the model returned HTTP 500;
+the other four tries passed.
+
+```
+- stopped early: no
+- selected_item: lst_002 — Y2K Baby Tee — Butterfly Print ($18.0, depop)
+Fit card:
+Channeling peak 2000s energy in this Y2K baby tee with baggy denim and chunky sneakers. Grab this fitted butterfly crop for just $18.0 exclusively on depop. ✨🦋
 ```
 
+**Criterion 2 — `agent.py::run_agent`, Try 1:** An impossible query returned
+this message, left `selected_item` empty, and stopped after the search.
+
+```
+- stopped early: yes — No listings matched 'designer ballgown' with size XXS and under $5. Try changing the item description or removing a size or price limit.
+- selected_item: (none) — (none)
+- search_results: 0
+[1] search_listings (via MCP)
+      in:  {description=designer ballgown, size=XXS, max_price=5.0}
+      out: [] (empty)
+      →    empty result; stopping before outfit suggestion
+```
+
+**Criterion 3 — `agent.py::run_agent`, Try 1:** The saved item and the item
+input to `suggest_outfit` both have ID `lst_002`.
+
+```
+- selected_item: lst_002 — Y2K Baby Tee — Butterfly Print ($18.0, depop)
+[2] suggest_outfit
+      in:  {item=lst_002: Y2K Baby Tee — Butterfly Print ($18.0, depop), wardrobe={items=10 items: Baggy straight-leg jea…
+```
+
+**Criterion 4 — `tools.py::create_fit_card`, Try 1:** The caption includes the
+selected item's $18 price and Depop platform.
+
+```
+Channel your inner 2000s pop star with this adorable butterfly baby tee. Grab it on depop for just $18.0 to complete your throwback streetwear rotation. Pair it with baggy denim and chunky sneakers for the ultimate nostalgic fit.
+```
+
+**Criterion 5 — `tools.py::search_listings`, Try 1:** All six returned
+listings cost $30 or less.
+
+```
+query: graphic tee under $30
+lst_002: $18.0
+lst_006: $24.0
+lst_017: $15.0
+lst_033: $19.0
+lst_011: $27.0
+lst_015: $26.0
 ```
 
 ---
