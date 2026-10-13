@@ -133,7 +133,7 @@ def run_agent(query: str, wardrobe: dict) -> dict:
                         "Try changing the item description or removing a size or price limit."
                     )
                     trace.step(
-                        "search_listings",
+                        "search_listings (via MCP)",
                         inputs=parsed,
                         returned=results,
                         note="empty result; stopping before outfit suggestion",
@@ -142,7 +142,7 @@ def run_agent(query: str, wardrobe: dict) -> dict:
 
                 session["selected_item"] = results[0]
                 trace.step(
-                    "search_listings",
+                    "search_listings (via MCP)",
                     inputs=parsed,
                     returned=results,
                     note="selected the first ranked result",

@@ -83,13 +83,28 @@ def _short(value, limit: int = 110) -> str:
             titles = ", ".join(str(v.get("title", "?")) for v in value[:3])
             more = f" … +{len(value) - 3} more" if len(value) > 3 else ""
             return f"{len(value)} items: {titles}{more}"
+        if isinstance(head, dict) and "name" in head:
+            names = ", ".join(str(v.get("name", "?")) for v in value[:3])
+            more = f" … +{len(value) - 3} more" if len(value) > 3 else ""
+            return f"{len(value)} items: {names}{more}"
         return f"{len(value)} items: {str(head)[:60]}…"
 
     if isinstance(value, dict):
         if "title" in value:
             return f"{value.get('title')} (${value.get('price')}, {value.get('platform')})"
-        keys = ", ".join(list(value)[:6])
-        return f"dict with keys: {keys}"
+        entries = []
+        for key, item in list(value.items())[:4]:
+            if isinstance(item, (dict, list)):
+                shown = _short(item, limit=65)
+            else:
+                shown = str(item).replace("\n", " ")
+                if len(shown) > 35:
+                    shown = shown[:35] + "…"
+            entries.append(f"{key}={shown}")
+        if len(value) > 4:
+            entries.append("…")
+        text = "{" + ", ".join(entries) + "}"
+        return text if len(text) <= limit else text[:limit] + "…"
 
     text = str(value).replace("\n", " ")
     return text if len(text) <= limit else text[:limit] + "…"

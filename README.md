@@ -295,7 +295,17 @@ that produced it:
 **Happy path**
 
 ```
-
+$ python app.py ask 'vintage graphic tee under $30' --trace
+[1] search_listings (via MCP)
+      in:  {description=vintage graphic tee, size=None, max_price=30.0}
+      out: 10 items: Y2K Baby Tee — Butterfly Print, Graphic Tee — 2003 Tour Bootleg Style, Vintage Band Tee — Faded Grey … +7 more
+      →    selected the first ranked result
+[2] suggest_outfit
+      in:  {item=Y2K Baby Tee — Butterfly Print ($18.0, depop), wardrobe={items=10 items: Baggy straight-leg jeans, dark …
+      out: Here is a complete, wearable outfit using your Y2K baby tee:  * **Bottoms:** Baggy straight-leg jeans (dark bl…
+[3] create_fit_card
+      in:  {outfit=Here is a complete, wearable outfit…, item=Y2K Baby Tee — Butterfly Print ($18.0, depop)}
+      out: Channeling major early 2000s energy with this butterfly baby tee, styled with baggy dark-wash denim and chunky…
 ```
 
 **Empty search**
