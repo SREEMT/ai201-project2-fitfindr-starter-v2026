@@ -328,17 +328,32 @@ def generate(
                 or "resource" in message and "exhaust" in message
                 or "rate" in message and "limit" in message
             )
-            if not rate_limited:
+            transient_server_error = bool(
+                re.search(r"\b(?:500|502|503|504)\b", message)
+            )
+            if not rate_limited and not transient_server_error:
                 raise ModelUnavailable(_explain(exc)) from exc
             backoff = _retry_delay(exc, attempt)
-            print(
-                f"  [rate limit] service pushed back. Waiting {backoff:.0f}s "
-                f"(attempt {attempt + 1} of {config.MAX_RETRIES}). This is "
-                f"the limiter doing its job, not a bug.",
-                file=sys.stderr,
-                flush=True,
-            )
+            if rate_limited:
+                print(
+                    f"  [rate limit] service pushed back. Waiting {backoff:.0f}s "
+                    f"(attempt {attempt + 1} of {config.MAX_RETRIES}). This is "
+                    f"the limiter doing its job, not a bug.",
+                    file=sys.stderr,
+                    flush=True,
+                )
+            else:
+                print(
+                    f"  [model service] temporary server error. Waiting "
+                    f"{backoff:.0f}s (attempt {attempt + 1} of "
+                    f"{config.MAX_RETRIES}).",
+                    file=sys.stderr,
+                    flush=True,
+                )
             time.sleep(backoff)
+
+    if last_error and re.search(r"\b(?:500|502|503|504)\b", str(last_error)):
+        raise ModelUnavailable(_explain(last_error)) from last_error
 
     raise RuntimeError(
         f"Still rate limited after {config.MAX_RETRIES} attempts. Wait a "

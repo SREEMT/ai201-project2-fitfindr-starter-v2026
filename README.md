@@ -385,21 +385,33 @@ full. -->
 
      `python run_eval.py --label after` -->
 
-**What I changed:**
+**What I changed:** In `generate.py::generate`, added bounded retries with
+backoff for temporary HTTP 500/502/503/504 model-service errors, matching the
+existing retry behavior for rate limits.
 
-**Which failure it was meant to fix:**
+**Which failure it was meant to fix:** The before run's first try for criterion
+1 stopped at `suggest_outfit` after the model service returned HTTP 500. The
+adapter previously surfaced that error immediately.
 
 ### Run Log — After
 
 | Criterion | Target | Try 1 | Try 2 | Try 3 | Try 4 | Try 5 | Verdict |
 |---|---|---|---|---|---|---|---|
-| 1.  |  |  |  |  |  |  |  |
-| 2.  |  |  |  |  |  |  |  |
-| 3.  |  |  |  |  |  |  |  |
-| 4.  |  |  |  |  |  |  |  |
-| 5.  |  |  |  |  |  |  |  |
+| 1. Full three-tool run returns a fit card | 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 2. Empty search stops before tool 2 | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 3. Item in session matches item passed on | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 4. Fit card mentions the item's price and platform | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 5. Over-budget query returns nothing over the limit | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+
+Full per-try output: `results/run_2026-10-12_2014_after.md` (`run_eval.py::main`).
 
 **Did it help, and how do I know:**
+
+Yes, in this run criterion 1 improved from 4/5 before to 5/5 after; all other
+criteria stayed at 5/5. A controlled check also confirmed that a temporary
+HTTP 500 is retried successfully and repeated 500s still produce
+`ModelUnavailable`. The live after run had no 5xx to retry, so its result alone
+does not prove the intermittent failure will never recur.
 
 <!-- If it made things worse, say that. Honestly reported, that earns full
      credit and is more interesting than one that worked. -->
