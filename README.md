@@ -213,6 +213,16 @@ Try 3: Throw on a crisp white tee and your favorite sneakers with these broken-i
   selected item reaches the later tools, then recorded the observed commands
   and outputs in the Sample Run section.
 
+**Moment 3**
+
+- *What I asked for:* Help diagnose why one before-run attempt stopped after a
+  model-service HTTP 500 and suggest one focused improvement.
+- *What came back:* A recommendation to retry temporary 5xx service errors
+  with bounded backoff, rather than failing immediately.
+- *What I changed:* I added that retry behavior in `generate.py`, checked that
+  a simulated 500 can recover and that exhausted retries still raise
+  `ModelUnavailable`, then ran the five-try evaluation again.
+
 <!-- ═══════════════════════ UNIT 4 — THE TEST ═══════════════════════
 
      Don't fill these in during unit 3.
@@ -374,7 +384,11 @@ behaved differently afterwards. If the rewire didn't work, say exactly where it
 broke — the error text and the last thing that worked. That earns the point in
 full. -->
 
-
+`agent.py::run_agent` now calls `search_listings` through
+`mcp_client.call_tool`; the MCP server exposes that tool with the same inputs.
+The call still returns the listing dictionaries expected by the loop. The
+happy-path query worked, and no behavior difference from the direct call was
+observed.
 
 ---
 
@@ -426,6 +440,10 @@ does not prove the intermittent failure will never recur.
      you did. "I ran out of time" is fine if it's true. Pretending nothing is
      left is not. -->
 
+No criteria remain missed after the after run; all five targets were met. A
+persistent model outage can still make a request unavailable after the bounded
+retries. If that happens, I would check the model service and retry when it is
+available.
 
 
 <!-- ═════════════════════════════════════════════════════════════════════
