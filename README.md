@@ -319,15 +319,19 @@ lst_015: $26.0
 
 | # | Criterion | Target | Verdict | How I decided |
 |---|---|---|---|---|
-| 1 |  |  |  |  |
-| 2 |  |  |  |  |
-| 3 |  |  |  |  |
-| 4 |  |  |  |  |
-| 5 |  |  |  |  |
+| 1 | Full three-tool run returns a fit card | 4 of 5 | MET (4/5) | Four runs completed all three tools and returned a fit card. One stopped after the outfit step when the model service returned HTTP 500. |
+| 2 | Empty search stops before tool 2 | 5 of 5 | MET (5/5) | All five impossible-query runs returned the change-this message and stopped after `search_listings`; `suggest_outfit` was not called. |
+| 3 | Item in session matches item passed on | 5 of 5 | MET (5/5) | In all five runs, `session["selected_item"]` and the item input to `suggest_outfit` had ID `lst_002`. |
+| 4 | Fit card mentions the item's price and platform | 5 of 5 | MET (5/5) | All five captions for the selected $18 item mentioned its price and Depop. |
+| 5 | Over-budget query returns nothing over the limit | 5 of 5 | MET (5/5) | All five searches returned six results, each priced at $30 or less. |
 
 **Diagnoses**
 
-
+No criteria were missed. The one failed attempt under criterion 1 was a
+model-output/service failure: `suggest_outfit` stopped with an HTTP 500 before
+`create_fit_card` could run. The other four attempts succeeded, meeting the
+4-of-5 target. The remaining criteria depend on deterministic search/session
+behavior or produced compliant fit-card details in all five tries.
 
 ---
 
